@@ -442,18 +442,21 @@ DEVCIE_MODULES_INCLUDE="-I\\$(DEVICE_MODULES_PATH)/include"
         defconfig.append("${ROOT_DIR}/${KERNEL_DIR}/arch/arm64/configs/gki_defconfig")
         defconfig.append("${ROOT_DIR}/" + ctx.attr.device_modules_dir + "/arch/arm64/configs/${DEFCONFIG}")
         is_kasan_load = 0
+        kasan_config = []
         if ctx.attr.defconfig_overlays:
             for overlay in ctx.attr.defconfig_overlays:
-                if overlay == "kasan.config":
+                overlay_config = "${ROOT_DIR}/" + ctx.attr.device_modules_dir + "/kernel/configs/" + overlay
+                if overlay.startswith("kasan"):
                     is_kasan_load = 1
+                    kasan_config.append(overlay_config)
                 else:
-                    defconfig.append("${ROOT_DIR}/" + ctx.attr.device_modules_dir + "/kernel/configs/" + overlay)
+                    defconfig.append(overlay_config)
         if ctx.attr.build_variant == "eng":
             defconfig.append("${ROOT_DIR}/" + ctx.attr.device_modules_dir + "/kernel/configs/eng.config")
         elif ctx.attr.build_variant == "userdebug":
             defconfig.append("${ROOT_DIR}/" + ctx.attr.device_modules_dir + "/kernel/configs/userdebug.config")
         if is_kasan_load == 1:
-            defconfig.append("${ROOT_DIR}/" + ctx.attr.device_modules_dir + "/kernel/configs/kasan.config")
+            defconfig = defconfig + kasan_config
         content.append("DEFCONFIG={}".format(ctx.attr.defconfig))
 
         content.append("PRE_DEFCONFIG_CMDS=\"mkdir -p \\${OUT_DIR}/arch/arm64/configs/ && KCONFIG_CONFIG=\\${OUT_DIR}/arch/arm64/configs/${DEFCONFIG} ${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh -m -r " + " ".join(defconfig) + "\"")
