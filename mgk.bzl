@@ -214,6 +214,7 @@ def define_mgk(
                     "Image.gz",
                     "modules",
                 ],
+                strip_modules=True,
                 outs = DEFAULT_GKI_OUTS,
                 module_outs = common_eng_modules if ack_build == "eng" else common_userdebug_modules if ack_build == "userdebug" else common_user_modules if ack_build == "user" else common_modules,
                 base_kernel = None,
@@ -451,6 +452,8 @@ DEVCIE_MODULES_INCLUDE="-I\\$(DEVICE_MODULES_PATH)/include"
                     kasan_config.append(overlay_config)
                 else:
                     defconfig.append(overlay_config)
+        if ctx.attr.gki_mixed_build:
+            defconfig.append("${ROOT_DIR}/" + ctx.attr.device_modules_dir + "/kernel/configs/sign.config")
         if ctx.attr.build_variant == "eng":
             defconfig.append("${ROOT_DIR}/" + ctx.attr.device_modules_dir + "/kernel/configs/eng.config")
         elif ctx.attr.build_variant == "userdebug":
