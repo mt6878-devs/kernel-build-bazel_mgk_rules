@@ -216,7 +216,8 @@ def define_mgk(
                 ],
                 strip_modules=True,
                 outs = DEFAULT_GKI_OUTS,
-                module_outs = common_eng_modules if ack_build == "eng" else common_userdebug_modules if ack_build == "userdebug" else common_user_modules if ack_build == "user" else common_modules,
+                module_outs = common_eng_modules if ack_build == "eng" else common_userdebug_modules if ack_build == "userdebug" else common_user_modules if ack_build == "user" else [],
+                module_implicit_outs = common_modules if ack_build == "ack" else [],
                 base_kernel = None,
                 trim_nonlisted_kmi = False,
             )
@@ -235,7 +236,8 @@ def define_mgk(
                 outs = [
                     ".config",
                 ],
-                module_outs = common_eng_modules if build == "eng" else common_userdebug_modules if build == "userdebug" else common_user_modules,
+                module_outs = common_eng_modules if build == "eng" else common_userdebug_modules if build == "userdebug" else [],
+                module_implicit_outs = common_user_modules if build == "user" else [],
                 build_config = ":{}_build_config.{}".format(name, build),
                 kconfig_ext = ":Kconfig.ext",
                 make_goals = [
@@ -256,8 +258,9 @@ def define_mgk(
                 kmi_symbol_list_strict_mode = False,
                 collect_unstripped_modules = True,
             )
+        # internal
         kernel_abi(
-            name = "{}.{}_abi".format(name, build),
+            name = "{}.{}_internal_abi".format(name, build),
             kernel_modules = [
                 ":{}_modules.{}".format(name, build),
             ] + select({
@@ -265,6 +268,24 @@ def define_mgk(
                 "//build/bazel_mgk_rules:kernel_version_6.6"     : ["{}.{}.{}.{}".format(m, name, "6.6", build) for m in kleaf_internal],
                 "//build/bazel_mgk_rules:kernel_version_mainline": ["{}.{}.{}.{}".format(m, name, "mainline", build) for m in kleaf_internal],
                 "//conditions:default"                           : ["{}.{}".format(m, build) for m in kleaf_internal],
+            }),
+            kernel_build = ":{}.{}".format(name, build),
+            #abi_definition_xml = "android/abi_gki_aarch64.xml",
+            abi_definition_stg = "android/abi_gki_aarch64.stg",
+            kmi_symbol_list_add_only = True,
+            kmi_enforced = True,
+            module_grouping = False,
+        )
+        # customer
+        kernel_abi(
+            name = "{}.{}_customer_abi".format(name, build),
+            kernel_modules = [
+                ":{}_modules.{}".format(name, build),
+            ] + select({
+                "//build/bazel_mgk_rules:kernel_version_6.1"     : ["{}.{}.{}.{}".format(m, name, "6.1", build) for m in kleaf_customer],
+                "//build/bazel_mgk_rules:kernel_version_6.6"     : ["{}.{}.{}.{}".format(m, name, "6.6", build) for m in kleaf_customer],
+                "//build/bazel_mgk_rules:kernel_version_mainline": ["{}.{}.{}.{}".format(m, name, "mainline", build) for m in kleaf_customer],
+                "//conditions:default"                           : ["{}.{}".format(m, build) for m in kleaf_customer],
             }),
             kernel_build = ":{}.{}".format(name, build),
             #abi_definition_xml = "android/abi_gki_aarch64.xml",
@@ -325,10 +346,16 @@ def define_mgk(
                     "//build/bazel_mgk_rules:kernel_version_6.6"     : [":{}_kernel_aarch64.{}".format(name, build)],
                     "//build/bazel_mgk_rules:kernel_version_mainline": [":{}_kernel_aarch64.{}".format(name, build)],
                     "//conditions:default"                           : ["//kernel:kernel_aarch64.{}".format(build)],
-                }) + [
+                }) + (select({
+                    "//build/bazel_mgk_rules:kernel_version_6.1"     : [":{}_kernel_aarch64.{}/{}".format(name, build, m) for m in common_modules],
+                    "//build/bazel_mgk_rules:kernel_version_6.6"     : [":{}_kernel_aarch64.{}/{}".format(name, build, m) for m in common_modules],
+                    "//build/bazel_mgk_rules:kernel_version_mainline": [":{}_kernel_aarch64.{}/{}".format(name, build, m) for m in common_modules],
+                    "//conditions:default"                           : ["//kernel:kernel_aarch64.{}/{}".format(build, m) for m in common_modules],
+                }) if ack_build == "ack" else [])
+                + [
                     ":{}.{}".format(name, build),
                     ":{}_internal_modules_install.{}".format(name, build),
-                ],
+                ] + ([":{}.{}/{}".format(name, build, m) for m in common_user_modules] if build == "user" else []),
                 flat = False,
             )
         # customer
@@ -389,10 +416,16 @@ def define_mgk(
                     "//build/bazel_mgk_rules:kernel_version_6.6"     : [":{}_kernel_aarch64.{}".format(name, build)],
                     "//build/bazel_mgk_rules:kernel_version_mainline": [":{}_kernel_aarch64.{}".format(name, build)],
                     "//conditions:default"                           : ["//kernel:kernel_aarch64.{}".format(build)],
-                }) + [
+                }) + (select({
+                     "//build/bazel_mgk_rules:kernel_version_6.1"     : [":{}_kernel_aarch64.{}/{}".format(name, build, m) for m in common_modules],
+                     "//build/bazel_mgk_rules:kernel_version_6.6"     : [":{}_kernel_aarch64.{}/{}".format(name, build, m) for m in common_modules],
+                     "//build/bazel_mgk_rules:kernel_version_mainline": [":{}_kernel_aarch64.{}/{}".format(name, build, m) for m in common_modules],
+                     "//conditions:default"                           : ["//kernel:kernel_aarch64.{}/{}".format(build, m) for m in common_modules],
+                }) if ack_build == "ack" else [])
+                + [
                     ":{}.{}".format(name, build),
                     ":{}_customer_modules_install.{}".format(name, build),
-                ],
+                ] + ([":{}.{}/{}".format(name, build, m) for m in common_user_modules] if build == "user" else []),
                 flat = False,
             )
 
