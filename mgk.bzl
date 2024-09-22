@@ -103,7 +103,8 @@ def define_mgk(
         platform_device_userdebug_modules,
         device_user_modules,
         platform_device_user_modules,
-        symbol_list):
+        symbol_list,
+        additional_symbol_lists):
     mgk_defconfig_overlays = []
     for o in DEFCONFIG_OVERLAYS.split(" "):
         if o != "":
@@ -219,7 +220,10 @@ def define_mgk(
                 module_outs = common_eng_modules if ack_build == "eng" else common_userdebug_modules if ack_build == "userdebug" else common_user_modules if ack_build == "user" else [],
                 module_implicit_outs = common_modules if ack_build == "ack" else [],
                 base_kernel = None,
-                trim_nonlisted_kmi = False,
+                trim_nonlisted_kmi = True if ack_build == "ack" else False,
+                kmi_symbol_list = symbol_list,
+                additional_kmi_symbol_lists = additional_symbol_lists,
+                kmi_symbol_list_strict_mode = True if ack_build == "ack" else False,
             )
         if True:
             # for device module tree
@@ -253,8 +257,9 @@ def define_mgk(
                 module_signing_key = "certs/mtk_signing_key.pem",
                 modules_prepare_force_generate_headers = True,
                 # ABI
+                trim_nonlisted_kmi = True if ack_build == "ack" else False,
                 kmi_symbol_list = symbol_list,
-                trim_nonlisted_kmi = False,
+                additional_kmi_symbol_lists = additional_symbol_lists,
                 kmi_symbol_list_strict_mode = False,
                 collect_unstripped_modules = True,
             )
