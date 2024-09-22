@@ -257,7 +257,7 @@ def define_mgk(
                 module_signing_key = "certs/mtk_signing_key.pem",
                 modules_prepare_force_generate_headers = True,
                 # ABI
-                trim_nonlisted_kmi = True if ack_build == "ack" else False,
+                trim_nonlisted_kmi = False,
                 kmi_symbol_list = symbol_list,
                 additional_kmi_symbol_lists = additional_symbol_lists,
                 kmi_symbol_list_strict_mode = False,
