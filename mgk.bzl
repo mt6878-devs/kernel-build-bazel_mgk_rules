@@ -103,7 +103,8 @@ def define_mgk(
         platform_device_userdebug_modules,
         device_user_modules,
         platform_device_user_modules,
-        symbol_list):
+        symbol_list,
+        dtb_files = None):
     mgk_defconfig_overlays = []
     for o in DEFCONFIG_OVERLAYS.split(" "):
         if o != "":
@@ -234,13 +235,14 @@ def define_mgk(
                 ],
                 outs = [
                     ".config",
-                ],
+                ] + dtb_files,
                 module_outs = common_eng_modules if build == "eng" else common_userdebug_modules if build == "userdebug" else [],
                 module_implicit_outs = common_user_modules if build == "user" else [],
                 build_config = ":{}_build_config.{}".format(name, build),
                 kconfig_ext = ":Kconfig.ext",
                 make_goals = [
                     "modules",
+                    "dtbs",
                 ],
                 strip_modules = False,
                 base_kernel = select({
@@ -251,6 +253,11 @@ def define_mgk(
                 }) if build == "ack" else ":{}_kernel_aarch64.{}".format(name, build),
                 module_signing_key = "certs/mtk_signing_key.pem",
                 modules_prepare_force_generate_headers = True,
+                dtstree = select({
+                    "//build/bazel_mgk_rules:kernel_version_6.1": "//kernel_device_modules-6.1/arch/arm64/boot/dts:mtk_dt",
+                    "//build/bazel_mgk_rules:kernel_version_6.6": "//kernel_device_modules-6.6/arch/arm64/boot/dts:mtk_dt",
+                    "//conditions:default": "//kernel_device_modules-6.1/arch/arm64/boot/dts:mtk_dt",
+                }),
                 # ABI
                 kmi_symbol_list = symbol_list,
                 trim_nonlisted_kmi = False,
